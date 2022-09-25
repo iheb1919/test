@@ -47,13 +47,23 @@ async function startScrap(input) {
         await page.goto(randomBook)
 
         let bookDetails={}
+        let checkSelector = (await page.$('#metacol > h1') )? true : false;
+
         /////////////////////////////////////////////
-        if(await page.waitForSelector('#metacol > h1')) {
+
+
+
+        let amazoneLink;
+        if(checkSelector) {
             bookDetails['Title']= await page.$eval('#metacol > h1',text=>text.textContent.replace(/[\n\r]+|[\s]{2,}/g, '').trim())
             bookDetails['Author']= await page.$eval('#bookAuthors > span:nth-child(2) > div > a > span',text=>text.textContent.replace(/[\n\r]+|[\s]{2,}/g, '').trim())
             bookDetails['Description']= await page.$eval('#descriptionContainer > .readable.stacked > span:nth-child(1)',text=>text.textContent.replace(/[\n\r]+|[\s]{2,}/g, '').trim())
-
-                console.log(bookDetails)
+            console.log(bookDetails)
+            amazoneLink = await page.$$eval(".buyButtonBar.left", link =>{
+                return link.map(href=>href.querySelector('li > a').href)
+            })
+            await page.waitForSelector('#bookTitle')
+            open(amazoneLink[0])
             
         } else {
             bookDetails['Title']= await page.$eval('.BookPageTitleSection__title > h1',text=>text.textContent.replace(/[\n\r]+|[\s]{2,}/g, '').trim())
@@ -63,37 +73,17 @@ async function startScrap(input) {
             ,text=> text.textContent.replace(/[\n\r]+|[\s]{2,}/g, '').trim()
             )
             console.log(bookDetails)
-            
-        }
-        ////////////////////////////////////////
-
-        let amazoneLink = await page.$$eval(".buyButtonBar.left", link =>{
-            return link.map(href=>href.querySelector('li > a').href)
-        })
-        
-            
-        if (amazoneLink.length > 0)
-            {
-                await page.waitForSelector('#bookTitle')
-                
-                open(amazoneLink[0])
-            }
-        else {
-            
             amazoneLink = await page.waitForSelector('div.BookActions > div:nth-child(2) > div > div:nth-child(2) > button')
-            /* consoli Book*/
-            
-            /**/ 
             await amazoneLink.click()
             console.log("done")
             const ama = await page.waitForSelector('.DropdownMenu > a')
             await ama.click()
             await page.waitForTimeout(3*1000)
             const pagesNum = await browser.pages()
-            const page = pagesNum[pagesNum.length -1]
+            const page2 = pagesNum[pagesNum.length -1]
             try {
                 
-                const bookLink = await page.$$eval(".bigBoxContent.containerWithHeaderContent > ol",links =>{
+                const bookLink = await page2.$$eval(".bigBoxContent.containerWithHeaderContent > ol",links =>{
                     return links.filter(link=>link.querySelector('li > a')
                     .textContent.replace(/[\n\r]+|[\s]{2,}/g, '').trim() === "Amazon")
                     .map(href=>href.querySelector("a").href)
@@ -102,6 +92,8 @@ async function startScrap(input) {
             } catch (error) {
                 console.log("page not rigth")
             }
+            
+            
         }
     } catch (error) {
         console.log("can't find a book something went Wrong! \n"+error)
