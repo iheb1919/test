@@ -20,7 +20,7 @@ async function startScrap(input) {
     let names
     try {
         names = await page.$$eval(".categoryContainer > .category.clearFix",(links,input) => {
-            return links.filter(url => url.querySelector('a > h4').textContent.replace(/[\n\r]+|[\s]{2,}/g, '').trim() === input)
+            return links.filter(url => url.querySelector('a > h4').textContent.replace(/[\n\r]+|[\s]{2,}/g, '').trim() === input.replace("And","&"))
             .map(el => el.querySelector('a').href)},input);
             console.log(`going to ${input} Category ...` )
             await page.goto(names[0]);
